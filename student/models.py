@@ -4,7 +4,7 @@ class Student(models.Model):
     first_name = models.CharField(max_length = 20)
     last_name = models.CharField(max_length = 20)
     email= models.EmailField()
-    code = models.PositiveSmallIntegerField()
+    student_code = models.PositiveSmallIntegerField()
     date_of_birth = models.DateField()
     country = models.CharField(max_length = 20)
     bio = models.TextField()
@@ -12,6 +12,7 @@ class Student(models.Model):
     phone_number = models.CharField(max_length = 20)
     immediate_contact = models.CharField(max_length = 20)
     image = models.ImageField()
+    class_code = models.ForeignKey('Class' ,on_delete=models.CASCADE)
 
 
     def __str__(self):

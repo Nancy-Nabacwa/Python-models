@@ -3,14 +3,15 @@ from django.db import models
 class Teacher(models.Model):
     first_name = models.CharField(max_length = 20)
     last_name = models.CharField(max_length = 20)
-    gender = models.TextField()
+    gender = models.CharField(max_length = 20)
     email= models.EmailField()
     code = models.PositiveSmallIntegerField()
-    country = models.TextField()
+    country = models.CharField(max_length = 20)
     bio = models.TextField()
+    course_code = models.ForeignKey('Course')
     age = models.PositiveSmallIntegerField()
     phone_number = models.CharField(max_length = 20)
-    qualifications = models.CharField(max_length = 20)
+    teacher_salary = models.PositiveSmallIntegerField()
     hire_date = models.DateField()
     image = models.ImageField()
 

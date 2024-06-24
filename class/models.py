@@ -1,16 +1,18 @@
 from django.db import models
 
 class Class(models.Model):
-    class_name = models.TextField()
+    class_name = models.CharField(max_length = 20)
+    class_code = models.PositiveSmallIntegerField()
     class_capacity = models.PositiveSmallIntegerField()
-    class_schedule= models.TextField()
-    class_projects = models.TextField()
-    class_activities = models.TextField()
-    class_representative = models.TextField()
-    class_assignments = models.TextField()
-    class_policies = models.TextField()
-    class_requirements = models.TextField()
-    class_members_images = models.ImageField()
+    class_duration= models.TimeField()
+    class_training_assistant = models.CharField(max_length = 20)
+    class_representative = models.CharField(max_length = 20)
+    teacher_code = models.ForeignKey('Teacher', on_delete = models.CASCADE)
+    number_of_whiteboards = models.PositiveSmallIntegerField()
+    number_of_tables = models.PositiveSmallIntegerField()
+    number_of_chairs = models.PositiveSmallIntegerField()
+    
+    
 
 
     def __str__(self):
