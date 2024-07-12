@@ -40,7 +40,9 @@ INSTALLED_APPS = [
     "student",
     "teacher",
     "course",
-    "class",
+    "class_model",
+    "classPeriod",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
@@ -79,8 +81,12 @@ WSGI_APPLICATION = "school.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": "mydatabase",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "school_database",
+        "USER": "schooladmin",
+        "PASSWORD": "mypassword",
+        "HOST": "127.0.0.1",
+        "PORT": "5432",
     }
 }
 
