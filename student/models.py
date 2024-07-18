@@ -3,6 +3,9 @@ from django.db import models
 from class_model.models import Classroom 
 from course.models import Course
 
+
+# def upload_to(instance, filename):
+#     return 'images/{filename}'.format(filename=filename)
 class Student(models.Model):
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=20)
@@ -14,7 +17,7 @@ class Student(models.Model):
     age = models.PositiveSmallIntegerField()
     phone_number = models.CharField(max_length=20)
     immediate_contact = models.CharField(max_length=20)
-    image = models.ImageField()
+    image = models.ImageField(blank=True, null=True)
     classes = models.ManyToManyField(Classroom, related_name='students')
     courses = models.ManyToManyField(Course, related_name='students')
 

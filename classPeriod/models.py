@@ -2,19 +2,6 @@ from django.db import models;
 from class_model.models import Classroom;
 from course.models import Course;
 
-# Create your models here.
-
-# Start time
-# End time
-# Course
-# Classroom
-# Day of the week
-
-from django.db import models
-
-from class_model.models import Classroom 
-from course.models import Course
-
 class ClassPeriod(models.Model):
     start_time= models.TimeField()
     end_time = models.TimeField()

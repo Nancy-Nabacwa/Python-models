@@ -12,7 +12,7 @@ class Teacher(models.Model):
     phone_number = models.CharField(max_length=20)
     teacher_salary = models.PositiveSmallIntegerField(default=0)
     hire_date = models.DateField()
-    image = models.ImageField()
+    image = models.ImageField(blank=True ,null=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
