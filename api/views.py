@@ -1,3 +1,4 @@
+from django.db.models import Prefetch;
 from rest_framework.response import Response;
 from rest_framework import status;
 from rest_framework.views import APIView;
@@ -12,9 +13,16 @@ from .serializers import CourseSerializer;
 from .serializers import ClassroomSerializer;
 from .serializers import ClassPeriodSerializer;
 
+
 class StudentListView(APIView):
     def get(self, request):
         students = Student.objects.all()
+        first_name = request.query_params.get("first_name")
+        country = request.query_params.get("country")
+        if first_name:
+            students = students.filter(first_name = first_name)
+        if country:
+            country = students.filter(country = country)
         serializer = StudentSerializer(students, many = True)
         return Response(serializer.data)
     
@@ -27,6 +35,18 @@ class StudentListView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class StudentDetailView(APIView):
+    def enroll(self,student,course_code):
+        course = Course.objects.get(id=course_code)
+        student.courses.add(course)
+
+    def post(self,request,id):
+        student = Student.objects.get(id=id)
+        action = request.data.get("action")
+        if action == "enroll":
+            course_code = request.data.get("course_code")
+            self.enroll(student,course_code)
+        return Response(status=status.HTTP_201_CREATED)
+    
     def get(self,request,id):
         student = Student.objects.get(id=id)
         serializer = StudentSerializer(student)
@@ -63,6 +83,30 @@ class TeacherListView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 class TeacherDetailView(APIView):
+    def assign_course(self, teacher, course_code):
+        course = Course.objects.get(id=course_code)
+        teacher.courses.add(course)
+
+    def assign_class(self, teacher, class_code):
+        classroom = Classroom.objects.get(id=class_code)
+        teacher.assigned_classrooms.add(classroom)
+    
+    def post(self, request, id):
+        teacher = Teacher.objects.get(id=id)
+        action = request.data.get("action")
+        if action == "assign_course":
+            course_code = request.data.get("course_code")
+            self.assign_course(teacher, course_code)
+        elif action == "assign_class":
+            class_code = request.data.get("class_code")
+            self.assign_class(teacher, class_code)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=status.HTTP_201_CREATED)
+        
+        
+
     def get(self,request,id):
         teacher = Teacher.objects.get(id=id)
         serializer = TeacherSerializer(teacher)
@@ -185,3 +229,26 @@ class ClassPeriodDetailView(APIView):
         classPeriod = ClassPeriod.objects.get(id=id)
         classPeriod.delete()
         return Response(status = status.HTTP_202_ACCEPTED)
+    
+
+class WeeklyTimetableView(APIView):
+    def get(self, request):
+        class_periods = ClassPeriod.objects.all().prefetch_related(
+            'teacher', 'course', 'classrooms'
+        ).order_by('day_of_week', 'start_time')
+        
+        timetable = {}
+        for period in class_periods:
+            day = period.day_of_week.strftime("%A")
+            if day not in timetable:
+                timetable[day] = []
+            
+            timetable[day].append({
+                'start_time': period.start_time.strftime("%H:%M"),
+                'end_time': period.end_time.strftime("%H:%M"),
+                'teacher': period.teacher.first_name + " " + period.teacher.last_name,
+                'course': period.course.course_title,
+                'classroom': period.classrooms.first().name if period.classrooms.exists() else None
+            })
+        
+        return Response(timetable)

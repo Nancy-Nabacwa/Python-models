@@ -1,5 +1,5 @@
 from django.db import models;
-from teacher.models import Teacher;
+
 
 class Classroom(models.Model):
     class_name = models.CharField(max_length=20)
@@ -8,10 +8,10 @@ class Classroom(models.Model):
     class_duration = models.TimeField()
     class_training_assistant = models.CharField(max_length=20)
     class_representative = models.CharField(max_length=20)
-    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name='classes')
     number_of_whiteboards = models.PositiveSmallIntegerField()
     number_of_tables = models.PositiveSmallIntegerField()
     number_of_chairs = models.PositiveSmallIntegerField()
+    assigned_teachers = models.ManyToManyField('teacher.Teacher', related_name='classrooms_assigned')
 
     def __str__(self):
         return f"{self.class_name}"

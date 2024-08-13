@@ -1,4 +1,6 @@
 from django.db import models
+from class_model.models import Classroom 
+from course.models import Course
 
 class Teacher(models.Model):
     first_name = models.CharField(max_length=20)
@@ -13,6 +15,8 @@ class Teacher(models.Model):
     teacher_salary = models.PositiveSmallIntegerField(default=0)
     hire_date = models.DateField()
     image = models.ImageField(blank=True ,null=True)
+    assigned_classrooms = models.ManyToManyField(Classroom, related_name='teachers_assigned')  
+    courses = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='teachers')
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
