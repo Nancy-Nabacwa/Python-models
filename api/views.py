@@ -5,7 +5,7 @@ from rest_framework.views import APIView;
 from student.models import Student;
 from teacher.models import Teacher;
 from course.models import Course;
-from classPeriod.models import ClassPeriod;
+from classPeriod.models import ClassPeriod, ClassPeriodClassPeriod;
 from class_model.models import Classroom;
 from .serializers import StudentSerializer;
 from .serializers import TeacherSerializer
@@ -229,26 +229,35 @@ class ClassPeriodDetailView(APIView):
         classPeriod = ClassPeriod.objects.get(id=id)
         classPeriod.delete()
         return Response(status = status.HTTP_202_ACCEPTED)
-    
+      
 
 class WeeklyTimetableView(APIView):
     def get(self, request):
-        class_periods = ClassPeriod.objects.all().prefetch_related(
-            'teacher', 'course', 'classrooms'
-        ).order_by('day_of_week', 'start_time')
-        
-        timetable = {}
-        for period in class_periods:
-            day = period.day_of_week.strftime("%A")
-            if day not in timetable:
-                timetable[day] = []
+        try:
+            class_periods = ClassPeriod.objects.all().prefetch_related(
+                'classrooms', 'courses'
+            ).order_by('day_of_week', 'start_time')
             
-            timetable[day].append({
-                'start_time': period.start_time.strftime("%H:%M"),
-                'end_time': period.end_time.strftime("%H:%M"),
-                'teacher': period.teacher.first_name + " " + period.teacher.last_name,
-                'course': period.course.course_title,
-                'classroom': period.classrooms.first().name if period.classrooms.exists() else None
-            })
-        
-        return Response(timetable)
+            timetable = {}
+            for period in class_periods:
+                day = period.day_of_week.strftime("%A")
+                if day not in timetable:
+                    timetable[day] = []
+                
+               
+                related_objects = ClassPeriodClassPeriod.objects.filter(class_period=period)
+                classrooms = [obj.classroom for obj in related_objects]
+                courses = [obj.course for obj in related_objects]
+                
+                timetable[day].append({
+                    'start_time': period.start_time.strftime("%H:%M"),
+                    'end_time': period.end_time.strftime("%H:%M"),
+                    'classrooms': [classroom.name for classroom in classrooms],
+                    'courses': [course.course_title for course in courses],
+                    'day_of_week': period.day_of_week.strftime("%A")
+                })
+
+            return Response(timetable, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
