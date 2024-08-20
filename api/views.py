@@ -12,18 +12,25 @@ from .serializers import TeacherSerializer
 from .serializers import CourseSerializer;
 from .serializers import ClassroomSerializer;
 from .serializers import ClassPeriodSerializer;
+from .serializers import MinimalStudentSerializer;
+from .serializers import MinimalClassroomSerializer;
+from .serializers import MinimalTeacherSerializer;
+from .serializers import MinimalCourseSerializer;
+from django.db.models import Q
+from datetime import datetime, time
 
 
 class StudentListView(APIView):
     def get(self, request):
         students = Student.objects.all()
+        serializer = MinimalStudentSerializer(students, many = True )
         first_name = request.query_params.get("first_name")
         country = request.query_params.get("country")
         if first_name:
             students = students.filter(first_name = first_name)
         if country:
             country = students.filter(country = country)
-        serializer = StudentSerializer(students, many = True)
+        # serializer = StudentSerializer(students, many = True)
         return Response(serializer.data)
     
     def post(self,request):
@@ -33,6 +40,8 @@ class StudentListView(APIView):
             return Response(serializer.data, status= status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 class StudentDetailView(APIView):
     def enroll(self,student,course_code):
@@ -50,6 +59,7 @@ class StudentDetailView(APIView):
     def get(self,request,id):
         student = Student.objects.get(id=id)
         serializer = StudentSerializer(student)
+        # serializer = MinimalStudentSerializer(student)
         return Response(serializer.data)
     
     def put(self,request,id):
@@ -71,7 +81,8 @@ class StudentDetailView(APIView):
 class TeacherListView(APIView):
     def get(self, request):
         teachers = Teacher.objects.all()
-        serializer = TeacherSerializer(teachers, many=True)
+        serializer = MinimalTeacherSerializer(teachers, many = True)
+        # serializer = TeacherSerializer(teachers, many=True)
         return Response(serializer.data)
     
     def post(self,request):
@@ -130,7 +141,7 @@ class TeacherDetailView(APIView):
 class CourseListView(APIView):
     def get(self,request):
         courses = Course.objects.all()
-        serializer = CourseSerializer(courses, many = True)
+        serializer = MinimalCourseSerializer(courses, many = True)
         return Response(serializer.data)
     def post(self,request):
         serializer = CourseSerializer(data=request.data)
@@ -164,7 +175,8 @@ class CourseDetailView(APIView):
 class ClassroomListView(APIView):
     def get(self,request):
         classrooms = Classroom.objects.all()
-        serializer = ClassroomSerializer(classrooms, many = True)
+        classrooms = Classroom.objects.prefetch_related('assigned_teachers').all()
+        serializer = MinimalClassroomSerializer(classrooms, many = True)
         return Response(serializer.data)
     def post(self,request):
         serializer = ClassroomSerializer(data=request.data)
@@ -231,31 +243,40 @@ class ClassPeriodDetailView(APIView):
         return Response(status = status.HTTP_202_ACCEPTED)
       
 
+    
 class WeeklyTimetableView(APIView):
     def get(self, request):
         try:
             class_periods = ClassPeriod.objects.all().prefetch_related(
                 'classrooms', 'courses'
             ).order_by('day_of_week', 'start_time')
-            
+
             timetable = {}
             for period in class_periods:
                 day = period.day_of_week.strftime("%A")
                 if day not in timetable:
                     timetable[day] = []
-                
-               
-                related_objects = ClassPeriodClassPeriod.objects.filter(class_period=period)
-                classrooms = [obj.classroom for obj in related_objects]
-                courses = [obj.course for obj in related_objects]
-                
+
+                # Ensure start_time is before end_time
+                start_time = period.start_time
+                end_time = period.end_time
+                if start_time > end_time:
+                    start_time, end_time = end_time, start_time
+
+                classrooms = [classroom.class_name for classroom in period.classrooms.all()]
+                courses = [course.course_title for course in period.courses.all()]
+
                 timetable[day].append({
-                    'start_time': period.start_time.strftime("%H:%M"),
-                    'end_time': period.end_time.strftime("%H:%M"),
-                    'classrooms': [classroom.name for classroom in classrooms],
-                    'courses': [course.course_title for course in courses],
-                    'day_of_week': period.day_of_week.strftime("%A")
+                    'start_time': start_time.strftime("%H:%M"),
+                    'end_time': end_time.strftime("%H:%M"),
+                    'classrooms': classrooms,
+                    'courses': courses,
+                    'day_of_week': day
                 })
+
+            # Sort the periods within each day
+            for day in timetable:
+                timetable[day].sort(key=lambda x: datetime.strptime(x['start_time'], "%H:%M"))
 
             return Response(timetable, status=status.HTTP_200_OK)
 
